@@ -1,0 +1,16 @@
+services:
+  proshop-api:
+    build: ./backend
+    image: proshop-api:1.0.1
+    container_name: proshop-api
+    ports: ["8080:8080"]
+    env_file: ./backend/.env
+    restart: unless-stopped
+
+  proshop-frontend:
+    build: ./frontend
+    image: proshop-frontend:1.0.4
+    container_name: proshop-frontend
+    ports: ["8081:80"]
+    depends_on: [proshop-api]
+    restart: unless-stopped
