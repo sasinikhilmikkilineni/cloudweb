@@ -1,31 +1,25 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# Terraform
+.terraform/
+terraform.tfstate
+terraform.tfstate.*
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+*.tfvars
+*.auto.tfvars
+backend.hcl
 
-# dependencies
-node_modules
-/node_modules
-/.pnp
-.pnp.js
-
-# testing
-/coverage
-
-# production
-/build
-
-# misc
-.DS_Store
+# Env & secrets
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
 
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-frontend/build
-uploads/*png
-uploads/*jpg
+# Node/React
+**/node_modules/
+frontend/build/
 
-# API tests
-http
+# OS/editor
+.DS_Store
+*.log

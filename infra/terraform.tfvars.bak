@@ -1,0 +1,13 @@
+project = "proshop"
+region  = "us-east-1"
+
+# Your pushed ECR image tag (must exist)
+
+# Must be globally unique; change if already taken
+
+# Existing Secrets Manager names (we will create them next if missing)
+secret_mongo_uri_name        = "proshop/MONGO_URI"
+secret_jwt_secret_name       = "proshop/JWT_SECRET"
+secret_paypal_client_id_name = "proshop/PAYPAL_CLIENT_ID"
+frontend_bucket_name         = "proshop-frontend-085953615294-1763587874"
+backend_image        = "085953615294.dkr.ecr.us-east-1.amazonaws.com/proshop-api:main"

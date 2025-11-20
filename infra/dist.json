@@ -1,0 +1,60 @@
+{
+  "CallerReference": "1763582118",
+  "Comment": "SPA + /api/* via API Gateway",
+  "DefaultRootObject": "index.html",
+  "Enabled": true,
+  "Origins": {
+    "Quantity": 2,
+    "Items": [
+      {
+        "Id": "s3-frontend",
+        "DomainName": "my-frontend-bucket.s3.amazonaws.com",
+        "S3OriginConfig": { "OriginAccessIdentity": "" },
+        "OriginAccessControlId": ""
+      },
+      {
+        "Id": "api-gw",
+        "DomainName": "abc123.execute-api.us-east-1.amazonaws.com",
+        "OriginPath": "/prod",
+        "CustomOriginConfig": {
+          "OriginProtocolPolicy": "https-only"
+        }
+      }
+    ]
+  },
+  "DefaultCacheBehavior": {
+    "TargetOriginId": "s3-frontend",
+    "ViewerProtocolPolicy": "redirect-to-https",
+    "AllowedMethods": { "Quantity": 2, "Items": ["GET","HEAD"], "CachedMethods": { "Quantity": 2, "Items": ["GET","HEAD"] } },
+    "CachePolicyId": "658327ea-f89d-4fab-a63d-7e88639e58f6"
+  },
+  "CacheBehaviors": {
+    "Quantity": 1,
+    "Items": [
+      {
+        "PathPattern": "/api/*",
+        "TargetOriginId": "api-gw",
+        "ViewerProtocolPolicy": "https-only",
+        "AllowedMethods": {
+          "Quantity": 7,
+          "Items": ["GET","HEAD","OPTIONS","PUT","POST","PATCH","DELETE"],
+          "CachedMethods": { "Quantity": 3, "Items": ["GET","HEAD","OPTIONS"] }
+        },
+        "CachePolicyId": "4135ea2d-6df8-44a3-9df3-4b5a84be39ad",
+        "OriginRequestPolicyId": "b689b0a8-53d0-40ab-baf2-68738e2966ac",
+        "ResponseHeadersPolicyId": "5cc3b908-e619-4b99-88e5-2cf7f45965bd"
+      }
+    ]
+  },
+  "CustomErrorResponses": {
+    "Quantity": 2,
+    "Items": [
+      { "ErrorCode": 404, "ResponsePagePath": "/index.html", "ResponseCode": "200", "ErrorCachingMinTTL": 0 },
+      { "ErrorCode": 403, "ResponsePagePath": "/index.html", "ResponseCode": "200", "ErrorCachingMinTTL": 0 }
+    ]
+  }
+  /* Uncomment this block if you have a custom domain and ACM cert in us-east-1
+  ,"Aliases":{"Quantity":1,"Items":["''"]},
+  "ViewerCertificate":{"ACMCertificateArn":"''","SSLSupportMethod":"sni-only","MinimumProtocolVersion":"TLSv1.2_2021"}
+  */
+}
