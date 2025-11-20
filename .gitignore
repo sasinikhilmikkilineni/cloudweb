@@ -1,4 +1,4 @@
-# Terraform
+# --- Terraform local state & crash dumps ---
 .terraform/
 terraform.tfstate
 terraform.tfstate.*
@@ -8,18 +8,18 @@ override.tf
 override.tf.json
 *_override.tf
 *_override.tf.json
+
+# --- Env & secret config (keep examples only) ---
 *.tfvars
 *.auto.tfvars
 backend.hcl
-
-# Env & secrets
 .env
 .env.*
 
-# Node/React
+# --- Node/React artifacts ---
 **/node_modules/
 frontend/build/
 
-# OS/editor
+# --- OS/editor junk ---
 .DS_Store
 *.log

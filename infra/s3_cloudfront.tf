@@ -1,4 +1,3 @@
-# Private S3 bucket for React/Vite build
 resource "aws_s3_bucket" "frontend" {
   bucket = var.frontend_bucket_name
   tags   = local.tags
@@ -12,7 +11,6 @@ resource "aws_s3_bucket_public_access_block" "frontend" {
   restrict_public_buckets = true
 }
 
-# CloudFront OAC for S3
 resource "aws_cloudfront_origin_access_control" "oac" {
   name                              = "${local.name}-oac"
   origin_access_control_origin_type = "s3"
@@ -20,20 +18,17 @@ resource "aws_cloudfront_origin_access_control" "oac" {
   signing_protocol                  = "sigv4"
 }
 
-# CloudFront: S3 (default) + App Runner for /api/*
 resource "aws_cloudfront_distribution" "frontend" {
   enabled             = true
   aliases             = [] # use default CF domain for speed; add your domain later
   default_root_object = "index.html"
 
-  # S3 origin
   origin {
     domain_name              = aws_s3_bucket.frontend.bucket_regional_domain_name
     origin_id                = "s3-frontend"
     origin_access_control_id = aws_cloudfront_origin_access_control.oac.id
   }
 
-  # App Runner origin
   origin {
     domain_name = replace(aws_apprunner_service.api.service_url, "https://", "")
     origin_id   = "apprunner-api"
@@ -45,7 +40,6 @@ resource "aws_cloudfront_distribution" "frontend" {
     }
   }
 
-  # Default behavior: static site from S3
   default_cache_behavior {
     target_origin_id       = "s3-frontend"
     viewer_protocol_policy = "redirect-to-https"
@@ -58,7 +52,6 @@ resource "aws_cloudfront_distribution" "frontend" {
     }
   }
 
-  # API: no caching, forward auth/CORS headers
   ordered_cache_behavior {
     path_pattern           = "/api/*"
     target_origin_id       = "apprunner-api"
@@ -85,7 +78,6 @@ resource "aws_cloudfront_distribution" "frontend" {
     max_ttl     = 0
   }
 
-  # SPA deep-link fallback
   custom_error_response {
     error_code            = 403
     response_code         = 200
@@ -105,7 +97,6 @@ resource "aws_cloudfront_distribution" "frontend" {
     geo_restriction { restriction_type = "none" }
   }
 
-  # Default CF certificate (no custom domain needed)
   viewer_certificate {
     cloudfront_default_certificate = true
   }
@@ -113,7 +104,6 @@ resource "aws_cloudfront_distribution" "frontend" {
   tags = local.tags
 }
 
-# Bucket policy for OAC
 data "aws_iam_policy_document" "s3_policy" {
   statement {
     actions   = ["s3:GetObject"]

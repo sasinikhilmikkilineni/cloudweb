@@ -1,9 +1,7 @@
-# Read existing secrets (we do NOT create them here)
 data "aws_secretsmanager_secret" "mongo_uri" { name = var.secret_mongo_uri_name }
 data "aws_secretsmanager_secret" "jwt_secret" { name = var.secret_jwt_secret_name }
 data "aws_secretsmanager_secret" "paypal_client_id" { name = var.secret_paypal_client_id_name }
 
-# Role so App Runner can pull from ECR
 resource "aws_iam_role" "apprunner_ecr" {
   name = "${local.name}-apprunner-ecr"
   assume_role_policy = jsonencode({
@@ -29,7 +27,6 @@ resource "aws_iam_role_policy" "apprunner_ecr_pull" {
   })
 }
 
-# Instance role for the running service to read secrets
 resource "aws_iam_role" "apprunner_instance" {
   name = "${local.name}-apprunner-instance"
   assume_role_policy = jsonencode({

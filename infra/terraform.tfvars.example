@@ -1,0 +1,6 @@
+project  = "proshop"
+region   = "us-east-1"
+# backend_image        = "ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/proshop-api:main"
+# frontend_bucket_name = "proshop-frontend-<account>-<unique>"
+# secret_mongo_uri_name  = "proshop/MONGO_URI"
+# secret_jwt_secret_name = "proshop/JWT_SECRET"
