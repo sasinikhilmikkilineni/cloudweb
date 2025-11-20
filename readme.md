@@ -1,7 +1,4 @@
-# ===== ProShop local run (Windows PowerShell) =====
-$ErrorActionPreference = "Stop"
-
-# 0) Project folder (edit if your path is different)
+0) Project folder (edit if your path is different)
 $Project = "C:\Users\SASI NIKHIL\Desktop\Final cloud\proshop-v2-main"
 if (-not (Test-Path $Project)) { throw "Project folder not found: $Project" }
 Set-Location $Project
@@ -9,7 +6,7 @@ Set-Location $Project
 # Sanity: Docker Desktop available?
 docker version *>$null | Out-Null
 
-# 1) Create backend\.env with your real settings
+ 1) Create backend\.env with your real settings
 @"
 NODE_ENV=development
 PORT=8080
@@ -18,10 +15,10 @@ JWT_SECRET=supersecret_change_me
 PAYPAL_CLIENT_ID=sb
 "@ | Set-Content -Encoding UTF8 "$Project\backend\.env"
 
-# 2) Build & start containers (API on :8080, Frontend on :8081)
+ 2) Build & start containers (API on :8080, Frontend on :8081)
 docker compose up -d --build
 
-# 3) Seed sample data (tries common script names)
+3) Seed sample data (tries common script names)
 #    Grabs the running API container ID from compose; falls back to port 8080 container.
 $apiId = (docker compose ps -q proshop-api)
 if (-not $apiId) { $apiId = (docker ps --filter "publish=8080" --format "{{.ID}}" | Select-Object -First 1) }
@@ -29,7 +26,7 @@ if (-not $apiId) { throw "Could not find API container (expected service 'prosho
 
 docker exec -it $apiId sh -lc "npm run data:import || node seeder.js || node seeder.mjs || node src/seeder.js"
 
-# 4) Quick checks
+ 4) Quick checks
 Write-Host "`n=== Quick checks ==="
 Write-Host "API -> http://localhost:8080/api/products"
 curl.exe http://localhost:8080/api/products
@@ -42,7 +39,6 @@ curl.exe http://localhost:8081/api/products
 
 Write-Host "`nDone. For logs:  docker compose logs -f proshop-api  (or proshop-frontend)"
 # To stop later: docker compose down
-
 
 
 # ProShop eCommerce Platform (v2)
