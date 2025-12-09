@@ -1,0 +1,43 @@
+service: proshop-api
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-west-2
+  environment:
+    MONGO_URI: mongodb+srv://sasinikhilmikkilineni:JEmaXajfuFiiOnVg@cluster0.rvactvu.mongodb.net/proshop
+    JWT_SECRET: supersecret_change_me
+    PAYPAL_CLIENT_ID: AfeI0t5-I4nrBCBl7-s6jD6vC8vRW0b7-dKsO0LG5NwHv5kFJCKeDqmGxT7iJPJF0Ff2gVf04UM0q3Tg
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - logs:CreateLogGroup
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+          Resource: '*'
+
+functions:
+  api:
+    handler: handler.handler
+    events:
+      - http:
+          path: /{proxy+}
+          method: ANY
+          cors: true
+      - http:
+          path: /
+          method: ANY
+          cors: true
+
+plugins:
+  - serverless-offline
+  - serverless-plugin-tracing
+
+package:
+  exclude:
+    - node_modules/**
+    - .git/**
