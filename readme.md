@@ -1,21 +1,21 @@
-# ProShop local run (Windows PowerShell) 
+# ProShop local run (Windows PowerShell)
 $ErrorActionPreference = "Stop"
 
 # 0) Project folder (edit if your path is different)
-$Project = "C:\Users\SASI NIKHIL\Desktop\Final cloud\proshop-v2-main"
+$Project = "C:\\path\\to\\proshop"
 if (-not (Test-Path $Project)) { throw "Project folder not found: $Project" }
 Set-Location $Project
 
 # Sanity: Docker Desktop available?
 docker version *>$null | Out-Null
 
-# 1) Create backend\.env with your real settings
+# 1) Create backend\.env with placeholder values (replace with your own; keep secrets out of git)
 @"
 NODE_ENV=development
 PORT=8080
-MONGO_URI=mongodb+srv://sasinikhilmikkilineni:JEmaXajfuFiiOnVg@cluster0.rvactvu.mongodb.net/proshop?retryWrites=true&w=majority
-JWT_SECRET=supersecret_change_me
-PAYPAL_CLIENT_ID=sb
+MONGO_URI=replace_with_your_mongo_uri
+JWT_SECRET=replace_with_strong_secret
+PAYPAL_CLIENT_ID=replace_with_paypal_client_id
 "@ | Set-Content -Encoding UTF8 "$Project\backend\.env"
 
 # 2) Build & start containers (API on :8080, Frontend on :8081)
