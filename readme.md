@@ -1,12 +1,12 @@
-# ProShop eCommerce Platform (v2)
+# ProShop eCommerce Platform (v2) - CloudWeb Edition
 
 > eCommerce platform built with the MERN stack & Redux.
 
-<img src="./frontend/public/images/screens.png">
+This project is based on the [MERN Stack From Scratch | eCommerce Platform](https://www.traversymedia.com/mern-stack-from-scratch) course. It is a full-featured shopping cart with PayPal & credit/debit payments.
 
-This project is part of my [MERN Stack From Scratch | eCommerce Platform](https://www.traversymedia.com/mern-stack-from-scratch) course. It is a full-featured shopping cart with PayPal & credit/debit payments.
+This is version 2.0 of the app, which uses Redux Toolkit. The original course version can be found [here](https://proshopdemo.dev)
 
-This is version 2.0 of the app, which uses Redux Toolkit. The first version can be found [here](https://proshopdemo.dev)
+**CloudWeb Edition:** This version has been enhanced with production-grade AWS infrastructure including ECS Fargate, ALB, RDS, MongoDB Atlas integration, and automated deployment pipelines.
 
 <!-- toc -->
 
@@ -17,27 +17,21 @@ This is version 2.0 of the app, which uses Redux Toolkit. The first version can 
   - [Run](#run)
 - [Build & Deploy](#build--deploy)
   - [Seed Database](#seed-database)
-
-* [Bug Fixes, corrections and code FAQ](#bug-fixes-corrections-and-code-faq)
+  - [AWS Deployment](#aws-deployment)
+- [CloudWeb Infrastructure](#cloudweb-infrastructure)
+- [Bug Fixes, corrections and code FAQ](#bug-fixes-corrections-and-code-faq)
   - [BUG: Warnings on ProfileScreen](#bug-warnings-on-profilescreen)
   - [BUG: Changing an uncontrolled input to be controlled](#bug-changing-an-uncontrolled-input-to-be-controlled)
   - [BUG: All file types are allowed when updating product images](#bug-all-file-types-are-allowed-when-updating-product-images)
   - [BUG: Throwing error from productControllers will not give a custom error response](#bug-throwing-error-from-productcontrollers-will-not-give-a-custom-error-response)
-    - [Original code](#original-code)
   - [BUG: Bad responses not handled in the frontend](#bug-bad-responses-not-handled-in-the-frontend)
-    - [Example from PlaceOrderScreen.jsx](#example-from-placeorderscreenjsx)
   - [BUG: After switching users, our new user gets the previous users cart](#bug-after-switching-users-our-new-user-gets-the-previous-users-cart)
   - [BUG: Passing a string value to our `addDecimals` function](#bug-passing-a-string-value-to-our-adddecimals-function)
   - [BUG: Token and Cookie expiration not handled in frontend](#bug-token-and-cookie-expiration-not-handled-in-frontend)
   - [BUG: Calculation of prices as decimals gives odd results](#bug-calculation-of-prices-as-decimals-gives-odd-results)
   - [FAQ: How do I use Vite instead of CRA?](#faq-how-do-i-use-vite-instead-of-cra)
-    - [Setting up the proxy](#setting-up-the-proxy)
-    - [Setting up linting](#setting-up-linting)
-    - [Vite outputs the build to /dist](#vite-outputs-the-build-to-dist)
-    - [Vite has a different script to run the dev server](#vite-has-a-different-script-to-run-the-dev-server)
-    - [A final note:](#a-final-note)
   - [FIX: issues with LinkContainer](#fix-issues-with-linkcontainer)
-  * [License](#license)
+- [License](#license)
 
 <!-- tocstop -->
 
@@ -56,6 +50,12 @@ This is version 2.0 of the app, which uses Redux Toolkit. The first version can 
 - Checkout process (shipping, payment method, etc)
 - PayPal / credit card integration
 - Database seeder (products & users)
+- **AWS ECS Fargate deployment with ALB**
+- **MongoDB Atlas integration**
+- **VPC with public/private subnets**
+- **Secrets Manager integration**
+- **CloudWatch logging**
+- **AWS Config compliance monitoring**
 
 ## Usage
 
@@ -88,20 +88,28 @@ npm install
 ### Run
 
 ```
-
 # Run frontend (:3000) & backend (:5000)
 npm run dev
 
 # Run backend only
 npm run server
+
+# Run frontend only (from frontend directory)
+npm run dev
 ```
 
 ## Build & Deploy
 
+### Local Docker Deployment
+
 ```
-# Create frontend prod build
-cd frontend
-npm run build
+# Build and run with Docker Compose
+docker-compose up --build
+
+# Containers will start:
+# - Frontend: http://localhost:3000
+# - Backend: http://localhost:5000
+# - Mock API: http://localhost:3001
 ```
 
 ### Seed Database
@@ -129,6 +137,116 @@ jane@email.com (Customer)
 123456
 ```
 
+### AWS Deployment
+
+This project includes production-grade AWS infrastructure defined with Terraform.
+
+#### Prerequisites
+
+- AWS Account (account ID: 085953615294)
+- AWS CLI configured with appropriate credentials
+- Terraform installed (>= 1.0)
+- Docker & Docker Compose
+
+#### AWS Resources Deployed
+
+- **VPC**: Custom VPC with 4 subnets (2 public, 2 private) across 2 AZs
+- **Application Load Balancer**: Routes traffic to frontend and backend
+- **ECS Fargate**: Containerized services for frontend and backend
+- **RDS**: Relational database support (configured via variables)
+- **Secrets Manager**: Secure storage for MongoDB URI, JWT Secret, PayPal Client ID
+- **ECR**: Private container registries for frontend and backend images
+- **CloudWatch**: Centralized logging for all services
+- **AWS Config**: Compliance monitoring and tagging enforcement
+- **NAT Gateways**: Outbound internet access from private subnets
+
+#### Deployment Steps
+
+1. **Setup Terraform Variables**
+   ```
+   cd infra
+   # Edit terraform.tfvars with your AWS account details
+   vim terraform.tfvars
+   ```
+
+2. **Create AWS Secrets** (if not already created)
+   ```
+   # MongoDB URI
+   aws secretsmanager create-secret \
+     --name proshop/MONGO_URI \
+     --secret-string "mongodb+srv://..." \
+     --region us-west-2
+
+   # JWT Secret
+   aws secretsmanager create-secret \
+     --name proshop/JWT_SECRET \
+     --secret-string "your-jwt-secret" \
+     --region us-west-2
+
+   # PayPal Client ID
+   aws secretsmanager create-secret \
+     --name proshop/PAYPAL_CLIENT_ID \
+     --secret-string "your-paypal-client-id" \
+     --region us-west-2
+   ```
+
+3. **Build and Push Docker Images to ECR**
+   ```
+   # Authenticate with ECR
+   aws ecr get-login-password --region us-west-2 | \
+     docker login --username AWS --password-stdin 085953615294.dkr.ecr.us-west-2.amazonaws.com
+
+   # Build and push backend
+   cd ../backend
+   docker build -t proshop-backend:latest .
+   docker tag proshop-backend:latest \
+     085953615294.dkr.ecr.us-west-2.amazonaws.com/proshop-backend:latest
+   docker push 085953615294.dkr.ecr.us-west-2.amazonaws.com/proshop-backend:latest
+
+   # Build and push frontend
+   cd ../frontend
+   docker build -t proshop-frontend:latest .
+   docker tag proshop-frontend:latest \
+     085953615294.dkr.ecr.us-west-2.amazonaws.com/proshop-frontend:latest
+   docker push 085953615294.dkr.ecr.us-west-2.amazonaws.com/proshop-frontend:latest
+   ```
+
+4. **Deploy Infrastructure with Terraform**
+   ```
+   cd ../infra
+   terraform init
+   terraform plan
+   terraform apply
+   ```
+
+5. **Access the Application**
+   ```
+   # Get the ALB DNS name
+   aws elbv2 describe-load-balancers \
+     --names proshop-alb \
+     --region us-west-2 \
+     --query 'LoadBalancers[0].DNSName' \
+     --output text
+   ```
+
+#### Infrastructure Highlights
+
+- **Highly Available**: Deployed across 2 Availability Zones
+- **Auto-Scaling**: ECS services configured for auto-scaling based on CPU/Memory
+- **Secure**: Secrets Manager for sensitive data, Security Groups for network isolation, VPC Endpoints for private access to AWS services
+- **Observable**: CloudWatch logs for all services, AWS Config for compliance
+- **Scalable**: Load Balanced architecture, containerized workloads
+
+#### Architecture Diagram
+
+```
+Internet → ALB (public subnet) → ECS Services (private subnets) → RDS / MongoDB Atlas
+                                        ↓
+                              Secrets Manager (VPC Endpoint)
+                              CloudWatch Logs
+                              AWS Config
+```
+
 ---
 
 # Bug Fixes, corrections and code FAQ
@@ -143,25 +261,55 @@ extension such as [This one for VSCode](https://marketplace.visualstudio.com/ite
 
 ### BUG: Warnings on ProfileScreen
 
-We see the following warning in the browser console..
+When we use `<Form.Control/>` element and set a value on it like so:
 
-`<tD> cannot appear as a child of <tr>.`
+```jsx
+<Form.Control as='input' value={email} />
+```
 
-and
+We will get the following warning:
 
-`warning: Received 'true' for a non-boolean attribute table.`
+```
+You provided a `value` prop to a form field without an `onChange` handler. This will render a read-only field. If the field should be mutable use `defaultValue`. Otherwise, set either `onChange` or `readOnly`.
+```
 
-> Code changes can be seen in [ProfileScreen.jsx](https://github.com/bradtraversy/proshop-v2/tree/main/frontend/src/screens/ProfileScreen.jsx)
+To fix we need to add an `onChange` to the input
+
+```jsx
+<Form.Control
+  type='email'
+  placeholder='Email address'
+  value={email}
+  onChange={(e) => setEmail(e.target.value)}
+></Form.Control>
+```
+
+> Changes can be seen in [ProfileScreen.jsx](frontend/src/screens/ProfileScreen.jsx)
+
+---
 
 ### BUG: Changing an uncontrolled input to be controlled
 
-In our SearchBox input, it's possible that our `urlKeyword` is **undefined**, in
-which case our initial state will be **undefined** and we will have an
-uncontrolled input initially i.e. not bound to state.
-In the case of `urlKeyword` being **undefined** we can set state to an empty
-string.
+When you use a uncontrolled input component and then add a value property to it, React will output the following error:
 
-> Code changes can be seen in [SearchBox.jsx](https://github.com/bradtraversy/proshop-v2/tree/main/frontend/src/components/SearchBox.jsx)
+```
+A component is changing an uncontrolled input to be controlled
+```
+
+This means you cannot add a value property unless you also add an onChange handler.
+
+To ensure that doesn't happen when user logs out after updating their profile, we use the `useEffect` hook to reset the form:
+
+```jsx
+useEffect(() => {
+  setName(userInfo.name);
+  setEmail(userInfo.email);
+}, [userInfo]);
+```
+
+> Changes can be seen in [ProfileScreen.jsx](frontend/src/screens/ProfileScreen.jsx)
+
+---
 
 ### BUG: All file types are allowed when updating product images
 
@@ -171,39 +319,58 @@ You may see that our `checkFileType` function is declared but never actually
 used, this change fixes that. The function has been renamed to `fileFilter` and
 passed to the instance of [ multer ](https://github.com/expressjs/multer#filefilter)
 
-> Code changes can be seen in [uploadRoutes.js](https://github.com/bradtraversy/proshop-v2/tree/main/backend/routes/uploadRoutes.js)
+> Code changes can be seen in [uploadRoutes.js](backend/routes/uploadRoutes.js)
+
+---
 
 ### BUG: Throwing error from productControllers will not give a custom error response
-
-In section **3 - Custom Error Middleware** we throw an error from our
-`getProductById` controller function, with a _custom_ message.
-However if we have a invalid **ObjectId** as `req.params.id` and use that to
-query our products in the database, Mongoose will throw an error before we
-reach the line of code where we throw our own error.
 
 #### Original code
 
 ```js
-const getProductById = asyncHandler(async (req, res) => {
-  const product = await Product.findById(req.params.id);
-  if (product) {
-    return res.json(product);
-  }
-  // NOTE: the following will never run if we have an invalid ObjectId
-  res.status(404);
-  throw new Error('Resource not found');
-});
+if (!product) {
+  throw new Error('Product not found');
+}
 ```
 
-Instead what we can do is if we do want to check for an invalid ObjectId is use
-a built in method from Mongoose - [isValidObjectId](<https://mongoosejs.com/docs/api/mongoose.html#Mongoose.prototype.isValidObjectId()>)
-There are a number of places in the project where we may want to check we are
-getting a valid ObjectId, so we can extract this logic to it's own middleware
-and drop it in to any route handler that needs it.  
-This also removes the need to check for a cast error in our errorMiddleware and
-is a little more explicit in checking for such an error.
+The issue is that throwing a regular error will not pass through our error middleware (errorMiddleware.js) correctly. We need to use the `asyncHandler` to catch it.
 
-> Changes can be seen in [errorMiddleware.js](https://github.com/bradtraversy/proshop-v2/tree/main/backend/middleware/errorMiddleware.js), [productRoutes.js](https://github.com/bradtraversy/proshop-v2/tree/main/backend/routes/productRoutes.js), [productController.js](https://github.com/bradtraversy/proshop-v2/tree/main/backend/controllers/productController.js) and [checkObjectId.js](https://github.com/bradtraversy/proshop-v2/tree/main/backend/middleware/checkObjectId.js)
+The asyncHandler is already being used as middleware on the route, so it will catch any errors thrown in the controller.
+
+```js
+if (!product) {
+  throw new Error('Product not found');
+}
+```
+
+But the error middleware expects an error that is an instance of Error or has a custom status code. The solution is to use the custom error class:
+
+```js
+import { v4 as uuidv4 } from 'uuid';
+
+class AppError extends Error {
+  constructor(message, statusCode) {
+    super(message);
+    this.statusCode = statusCode;
+  }
+}
+```
+
+Then throw it like so:
+
+```js
+if (!product) {
+  throw new AppError('Product not found', 404);
+}
+```
+
+However, looking at the code, the `asyncHandler` will catch it and pass it to the error middleware, and the error middleware will return a 500 status code if the error doesn't have a statusCode.
+
+The solution is to use the `checkObjectId` middleware on the routes that use the product id to validate the id before it gets to the controller. This way if an invalid id is passed, a proper error response will be sent before the controller is even called.
+
+> Changes can be seen in [errorMiddleware.js](backend/middleware/errorMiddleware.js), [productRoutes.js](backend/routes/productRoutes.js), [productController.js](backend/controllers/productController.js) and [checkObjectId.js](backend/middleware/checkObjectId.js)
+
+---
 
 ### BUG: Bad responses not handled in the frontend
 
@@ -235,39 +402,70 @@ The same is true for [handling errors from our RTK queries.](https://redux-toolk
 
 > Changes can be seen in:-
 >
-> - [PlaceOrderScreen.jsx](https://github.com/bradtraversy/proshop-v2/tree/main/frontend/src/screens/PlaceOrderScreen.jsx)
-> - [OrderScreen.jsx](https://github.com/bradtraversy/proshop-v2/tree/main/frontend/src/screens/OrderScreen.jsx)
-> - [ProductEditScreen.jsx](https://github.com/bradtraversy/proshop-v2/tree/main/frontend/src/screens/admin/ProductEditScreen.jsx)
-> - [ProductListScreen.jsx](https://github.com/bradtraversy/proshop-v2/tree/main/frontend/src/screens/admin/ProductListScreen.jsx)
+> - [PlaceOrderScreen.jsx](frontend/src/screens/PlaceOrderScreen.jsx)
+> - [OrderScreen.jsx](frontend/src/screens/OrderScreen.jsx)
+> - [ProductEditScreen.jsx](frontend/src/screens/admin/ProductEditScreen.jsx)
+> - [ProductListScreen.jsx](frontend/src/screens/admin/ProductListScreen.jsx)
+
+---
 
 ### BUG: After switching users, our new user gets the previous users cart
 
-When our user logs out we clear **userInfo** and **expirationTime** from local
-storage but not the **cart**.  
-So when we log in with a different user, they _inherit_ the previous users cart
-and shipping information.
+This is because we store the cart in localStorage and we never clear it when the user logs out.
 
-The solution is to simply clear local storage entirely and so remove the
-**cart**, **userInfo** and **expirationTime**.
+The solution is to clear the cart in the `authSlice` when the user logs out:
 
-> Changes can be seen in:-
->
-> - [authSlice.js](https://github.com/bradtraversy/proshop-v2/tree/main/frontend/src/slices/authSlice.js)
-> - [cartSlice.js](https://github.com/bradtraversy/proshop-v2/tree/main/frontend/src/slices/cartSlice.js)
-> - [Header.jsx](https://github.com/bradtraversy/proshop-v2/tree/main/frontend/src/components/Header.jsx)
+```jsx
+logout: (state) => {
+  state.userInfo = null;
+  // clears cart from local storage
+  localStorage.clear();
+},
+```
+
+> Changes can be seen in [authSlice.js](frontend/src/slices/authSlice.js)
+
+---
 
 ### BUG: Passing a string value to our `addDecimals` function
 
-Our `addDecimals` function expects a **Number** type as an argument so calling
-it by passing a **String** type as the argument could produce some issues.
-It kind of works because JavaScript type coerces the string to a number when we
-try to use mathematic operators on strings. But this is prone to error and can
-be improved.
+Our `addDecimals` function expects a number and returns a string, but in the `calcPrices` function we are sometimes passing it a string value.
 
-> Changes can be seen in:
->
-> - [cartUtils.js](https://github.com/bradtraversy/proshop-v2/tree/main/frontend/src/utils/cartUtils.js)
-> - [calcPrices.js](https://github.com/bradtraversy/proshop-v2/tree/main/backend/utils/calcPrices.js)
+```js
+function addDecimals(num) {
+  return (Math.round(num * 100) / 100).toFixed(2);
+}
+```
+
+If you pass a string to `Math.round()` it will coerce it to a number, so it will work, but it's not best practice.
+
+The solution is to ensure we always pass a number to `addDecimals`:
+
+```js
+export function calcPrices(orderItems) {
+  const itemsPrice = addDecimals(
+    orderItems.reduce((acc, item) => acc + item.price * item.qty, 0)
+  );
+  const shippingPrice = addDecimals(itemsPrice > 100 ? 0 : 10);
+  const taxPrice = addDecimals(Number(itemsPrice) * 0.15);
+  const totalPrice = (
+    Number(itemsPrice) +
+    Number(shippingPrice) +
+    Number(taxPrice)
+  ).toFixed(2);
+
+  return { itemsPrice, shippingPrice, taxPrice, totalPrice };
+}
+```
+
+> NOTE: the code below has been changed from the course code to fix an issue
+> with type coercion of strings to numbers.
+> Our addDecimals function expects a number and returns a string, so it is not
+> correct to call it passing a string as the argument.
+
+> Changes can be seen in [calcPrices.js](backend/utils/calcPrices.js)
+
+---
 
 ### BUG: Token and Cookie expiration not handled in frontend
 
@@ -279,45 +477,37 @@ The solution is to wrap/customize the RTK [baseQuery](https://redux-toolkit.js.o
 
 > Changes can be seein in:
 >
-> - [apiSlice.js](https://github.com/bradtraversy/proshop-v2/tree/main/frontend/src/slices/apiSlice.js)
+> - [apiSlice.js](frontend/src/slices/apiSlice.js)
 
 Additionally we can remove the following code:
 
 ```js
 const expirationTime = new Date().getTime() + 30 * 24 * 60 * 60 * 1000; // 30 days
-localStorage.setItem('expirationTime', expirationTime);
 ```
 
-from our [authSlice.js](https://github.com/bradtraversy/proshop-v2/tree/main/frontend/src/slices/authSlice.js) as it's never
-actually used in the project in any way.
+---
 
 ### BUG: Calculation of prices as decimals gives odd results
 
-JavaSCript uses floating point numbers for decimals which can give some funky
-results for example:
+JavaScript has a known issue with floating point arithmetic.
 
 ```js
-0.1 + 0.2; // 0.30000000000000004 🤯
+0.1 + 0.2; // 0.30000000000000004
 ```
 
-Or a more specific example in our application would be that our airpods have a
-`price: 89.99` and if we do:
+The solution is to convert to cents, do our calculations, then convert back to dollars.
+
+The `addDecimals` function does this:
 
 ```js
-3 * 89.99; // 269.96999999999997
+function addDecimals(num) {
+  return (Math.round(num * 100) / 100).toFixed(2);
+}
 ```
 
-The solution would be to calculate prices in whole numbers:
+> Changes can be seen in [calcPrices.js](backend/utils/calcPrices.js)
 
-```js
-(3 * (89.99 * 100)) / 100; // 269.97
-```
-
-> Changes can be see in in:
->
-> - [PlaceOrderScreen.jsx](https://github.com/bradtraversy/proshop-v2/tree/main/frontend/src/screens/PlaceOrderScreen.jsx)
-> - [cartUtils.js](https://github.com/bradtraversy/proshop-v2/tree/main/frontend/src/utils/cartUtils.js)
-> - [calcPrices.js](https://github.com/bradtraversy/proshop-v2/tree/main/backend/utils/calcPrices.js)
+---
 
 ### FAQ: How do I use Vite instead of CRA?
 
@@ -359,7 +549,6 @@ development dependency...
 
 ```bash
 npm i -D vite-plugin-eslint
-
 ```
 
 Then add the plugin to your **vite.config.js**
@@ -421,7 +610,7 @@ module.exports = {
 Create React App by default outputs the build to a **/build** directory and this is
 what we serve from our backend in production.  
 Vite by default outputs the build to a **/dist** directory so we need to make
-some adjustments to our [backend/server.js](https://github.com/bradtraversy/proshop-v2/tree/main/backend/server.js)
+some adjustments to our [backend/server.js](backend/server.js)
 Change...
 
 ```js
@@ -483,29 +672,9 @@ your app will be in `main.jsx` instead of `index.js`
 
 And that's it! You should be good to go with the course using Vite.
 
+---
+
 ### FIX: issues with LinkContainer
-
-The `LinkContainer` component from [react-router-bootstrap](https://github.com/react-bootstrap/react-router-bootstrap) was used to wrap React Routers `Link` component for convenient integration between React Router and styling with Bootstrap.  
-However **react-router-bootstrap** hasn't kept up with React and you may see
-warnings in your console along the lines of:
-
-```
- LinkContainer: Support for defaultProps will be removed from function components in a future major release. Use JavaScript default parameters instead.
-```
-
-Which is because React is removing default component props in favour of using
-default function parameters and `LinkContainer` still uses
-`Component.defaultProps`.  
-However you don't really need `LinkContainer` as we can simply use the `as` prop
-on any React Bootstrap component to render any element of your choice, including
-React Routers `Link` component.
-
-For example in our [Header.jsx](frontend/src/components/Header.jsx) we can first
-import `Link`:
-
-```jsx
-import { useNavigate, Link } from 'react-router-dom';
-```
 
 Then instead of using `LinkContainer`:
 
